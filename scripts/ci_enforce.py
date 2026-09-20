@@ -16,5 +16,9 @@ else:
     import tempfile
     with tempfile.TemporaryDirectory(prefix="yaja-ci-root-") as temporary:
         subprocess.run(["git", "clone", "--no-hardlinks", str(ROOT), temporary], check=True)
-        subprocess.run(["git", "update-ref", "-d", "HEAD"], cwd=temporary, check=True)
+        # A SHA checkout is detached: deleting HEAD would invalidate the repository.
+        # Point HEAD at a fresh unborn branch while preserving the entire index.
+        branch = "refs/heads/yaja-ci-root"
+        subprocess.run(["git", "update-ref", "-d", branch], cwd=temporary, check=True)
+        subprocess.run(["git", "symbolic-ref", "HEAD", branch], cwd=temporary, check=True)
         subprocess.run([sys.executable, ".githooks/pre_commit.py"], cwd=temporary, check=True)
