@@ -59,8 +59,10 @@ changes run tests; docs-only commits still audit I/O tokens.
 The spike runs before the documentation check; the documentation check runs
 before the test matrix for actionable feedback. CI uses `--base` to compare PR
 or push changes against their actual base, with a clean index. Root-commit CI
-uses the same staged-change contract by removing HEAD only in its disposable
-checkout before invoking the hook.
+uses the same staged-change contract by pointing HEAD to an unborn branch only
+in its disposable clone before invoking the hook. This preserves the index and
+keeps detached SHA checkouts valid Git repositories. A regression test exercises
+the detached initial-push path and checks that the original checkout is unchanged.
 
 ## Limits and trust model
 
