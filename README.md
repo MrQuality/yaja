@@ -106,15 +106,3 @@ The FerretDB 1.24.2 compatibility line is intentional: the supplied stock
 PostgreSQL 16 requirement matches the [1.x PostgreSQL backend](https://docs.ferretdb.io/v1.24/quickstart-guide/docker/).
 This is not an endorsement of that legacy line for deployment. Review supported
 versions, image digests, TLS, authentication, and backend migration before release.
-
-## Publish
-
-```text
-git remote add origin <YOUR_GITHUB_REPO_URL>
-git push -u origin main
-```
-
-Before accepting public reports, enable GitHub private vulnerability reporting
-and define the community reporting channel described in SECURITY.md and the
-Code of Conduct. Code is Apache-2.0; Contributor Covenant text retains its
-upstream CC-BY-4.0 attribution.
