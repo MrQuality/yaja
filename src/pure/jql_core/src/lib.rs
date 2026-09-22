@@ -1,4 +1,4 @@
-//! Track A: a deliberately small, typed equality grammar, without I/O or regex.
+//! A typed equality grammar.
 //! Supported input: ASCII identifier = single-quoted nonempty value.
 //! This is not yet the full isomorphic JQL/Rhai/Wasm compiler.
 

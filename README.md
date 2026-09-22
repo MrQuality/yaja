@@ -1,108 +1,94 @@
 # YAJA — Yet Another Jira Alternative
 
 ![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)
-![Stage: scaffold](https://img.shields.io/badge/stage-scaffold-orange)
+![Stage: early development](https://img.shields.io/badge/stage-early%20development-orange)
 
-YAJA is an open-source foundation for a dynamic-field, event-driven project
-management system. This repository implements the ADR-001 engineering protocol,
-a small Rust equality parser, a live NATS boundary probe, and typed synchronization
-contracts. The full YAJA application is a roadmap, not a delivered feature.
-CI badge: add the repository-specific Actions badge after publishing a remote.
+YAJA is an open-source project management system in early development, designed
+around custom fields and real-time updates. This repository currently contains
+a Rust query parser, NATS connection checks, and shared synchronization types.
+There is no runnable web application yet.
 
-## Architecture
+## Current components
 
-```mermaid
-flowchart LR
-    UI[React + Rust Wasm] --> Edge[Go edge]
-    Edge --> Bus[NATS JetStream / KV]
-    Bus --> Worker[Rust worker]
-    Worker --> Ferret[FerretDB]
-    Ferret --> PG[PostgreSQL: source of record]
-    PG --> CDC[Debezium: durable WAL checkpoint]
-    CDC --> Indexer[Projection worker via NATS]
-    Indexer --> Search[OpenSearch: read projection]
-    Indexer --> Bus
-    Bus --> SSE[Go SSE multiplexer]
-    SSE --> UI
-```
+| Component | Available today |
+| --- | --- |
+| Rust query parser | Parses a single equality filter, such as `status = 'Open'` |
+| Rust NATS connection | Connects to a broker and checks protocol round trips |
+| Go synchronization rules | Checks whether a query can run at the current schema version |
+| TypeScript contracts | Shared type declarations; no JavaScript runtime |
+| Development services | PostgreSQL, FerretDB, OpenSearch, and NATS in Compose |
 
-The diagram shows the target architecture. Debezium, the indexer, Go edge, React,
-Rhai, and Wasm emitters are not implemented by this baseline. See
-[the roadmap and limits](docs/IMPLEMENTATION.md) and the supplied
-[v0.2 design reference](docs/reference/YAJA-v0.2.md).
+See [implementation status](docs/IMPLEMENTATION.md) for limitations and planned work.
 
-Architectural invariants:
+## Development setup
 
-- Mutate one document atomically; use asynchronous sagas for multi-document work.
-- Never synchronously consult OpenSearch to authorize or validate a write.
-- Compile JQL once in shared Rust; do not duplicate client evaluation logic.
-- Stamp compiled artifacts and provisional mutations with an exact schema epoch.
-- Treat optimistic UI state as provisional until authoritative SSE reconciliation.
-- Checkpoint CDC against PostgreSQL WAL, independently of worker lifetime.
-- Use typed BSON and the MongoDB driver's `doc!` macro for future database queries.
-- Place pure Rust logic in `src/pure/`, physical Rust boundaries in `src/io/`.
-  Go pure contracts live in `go/pure/`; future Go adapters belong in `go/io/`,
-  which the same hook audits. This separate Go tree keeps Cargo's required
-  `src/pure/*` and `src/io/*` workspace globs valid.
+Install Python 3.10+, Git, Rust stable, Go 1.22+, and Podman or Docker with a
+Compose provider. Allow about 4 GiB of memory and ports 5432, 27017, 4222, 8222,
+and 9200 for the development services. Initial image pulls need Internet access.
+No third-party Python packages are required. npm/pnpm is optional for the
+declarations-only JavaScript workspace.
 
-## Quickstart (Windows 11 and Ubuntu)
-
-Install Python 3.10+, Git, Rust stable with Cargo, Go 1.22+, and Podman with a
-Compose provider (`podman-compose` or Docker Compose). The runtime needs Internet
-access for initial image pulls, about 4 GiB available memory, and free ports
-5432, 27017, 4222, 8222, and 9200. npm/pnpm is optional for the declarations-only
-JavaScript workspace. No third-party Python packages are required.
-
-For an empty directory containing the generator:
-
-```text
-python scaffold.py
-```
-
-The generator writes complete files without overwriting differences, initializes
-`main`, starts the local stack, runs verification, and commits only on success.
-For an existing checkout:
+From a checkout:
 
 ```text
 python scripts/setup_env.py --start
 python scripts/verify.py
 ```
 
-On Windows, start the Podman VM first with `podman machine start`. Linux hosts
-and the Linux VM need `vm.max_map_count` at least 262144 for OpenSearch; the
-Python CI preparation helper configures this in the disposable Ubuntu runner.
-Read [SECURITY.md](SECURITY.md) before exposing development ports.
+On Windows with Podman, start the VM first using `podman machine start`.
+OpenSearch requires `vm.max_map_count` of at least 262144 on the Linux host or
+VM. CI configures this in its disposable runner.
 
-Equivalent direct Podman commands:
+For unit tests without containers:
 
 ```text
-podman compose -f docker-compose.yml up -d
-python scripts/healthcheck.py --wait 180
-python spikes/active_spike.py
-cargo test --locked --workspace
-go test ./go/pure/sync_contract/...
+python scripts/verify.py --pure
+```
+
+Inspect or stop the services with your chosen container engine:
+
+```text
 podman compose -f docker-compose.yml logs
 podman compose -f docker-compose.yml down
 ```
 
-`podman-compose -f docker-compose.yml up -d` is also supported. Container data
-is ephemeral and is lost on container removal. PostgreSQL uses the requested
-local database/user/password: `yaja` / `postgres` / `postgres`.
+Use `docker compose` if you started the stack with Docker. Development data is
+ephemeral and is lost when containers are removed. Read [SECURITY.md](SECURITY.md)
+before changing network exposure or using real data.
 
-## Enforcement and contribution
+## Parser example
 
-Read [CONTRIBUTING.md](CONTRIBUTING.md) and [ADR-001](docs/ADR-001-AI-TESTING.md).
-Git's hooks path is `.githooks`. On Windows, Git uses its bundled POSIX launcher;
-on Ubuntu it uses `/bin/sh`. The two-line launcher only invokes Python. The `.bat`
-launcher supports direct Windows invocation. No shell logic implements policy.
+The `jql_core` crate accepts a single equality expression:
 
-The hook scans every staged I/O file for banned tokens, executes a fresh physical
-spike for boundary/dependency changes, requires staged Markdown with code, and
-tests an isolated export of the Git index. Rust and Go tests fail if their tools
-are absent. A Track A-only run (`python scripts/verify.py --pure`) is available
-while working on pure logic. It does not certify I/O changes.
+```rust
+use jql_core::parse_filter;
 
-The FerretDB 1.24.2 compatibility line is intentional: the supplied stock
-PostgreSQL 16 requirement matches the [1.x PostgreSQL backend](https://docs.ferretdb.io/v1.24/quickstart-guide/docker/).
-This is not an endorsement of that legacy line for deployment. Review supported
-versions, image digests, TLS, authentication, and backend migration before release.
+let filter = parse_filter("status = 'Open'").unwrap();
+assert_eq!(filter.field, "status");
+assert_eq!(filter.value, "Open");
+```
+
+Identifiers use ASCII letters, digits, and underscores and cannot start with a
+digit. Values are nonempty single-quoted strings. Compound expressions and
+escaped quotes are not supported yet.
+
+## Planned architecture
+
+The planned application uses a Go API, Rust workers, PostgreSQL through FerretDB,
+NATS for events, and OpenSearch for search. A shared Rust compiler will support
+server queries and browser-side evaluation. The API, UI, change-data-capture
+pipeline, and full query compiler remain to be implemented.
+
+The [v0.2 design](docs/reference/YAJA-v0.2.md) describes the target architecture
+and proposed contracts. It is a design reference, not a list of shipped features.
+The current development stack uses FerretDB 1.24.2 with PostgreSQL 16; a deployment
+requires a separate review of dependencies, authentication, and storage choices.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements and
+[docs/TESTING.md](docs/TESTING.md) for test commands. Report vulnerabilities as
+described in [SECURITY.md](SECURITY.md).
+
+Code is licensed under Apache-2.0. The Code of Conduct retains its upstream
+Contributor Covenant attribution.

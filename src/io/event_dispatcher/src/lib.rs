@@ -1,4 +1,4 @@
-//! Track C: live NATS connection boundary. No substitute transports.
+//! NATS connection and handshake checks.
 //! This bootstrap probe is not a production publisher or JetStream client SDK.
 use std::io::{self, BufRead, BufReader, Read, Write};
 use std::net::{SocketAddr, TcpStream};

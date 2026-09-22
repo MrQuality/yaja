@@ -1,0 +1,28 @@
+"""Check which test suite is selected for changed files."""
+from pathlib import Path
+import importlib.util
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location("verification", ROOT / ".githooks/pre_commit.py")
+POLICY = importlib.util.module_from_spec(SPEC)
+SPEC.loader.exec_module(POLICY)
+
+
+class VerificationTests(unittest.TestCase):
+    def test_live_scope_includes_dependencies_and_verifiers(self):
+        for path in ("src/io/x/src/lib.rs", "Cargo.lock", "go/pure/x/go.mod",
+                     "packages/x/package.json", "scripts/verify.py", ".githooks/pre_commit.py"):
+            self.assertTrue(POLICY.requires_live([path]), path)
+        self.assertFalse(POLICY.requires_live(["src/pure/jql_core/src/lib.rs", "README.md"]))
+
+    def test_source_and_configuration_require_tests(self):
+        self.assertTrue(POLICY.requires_tests("src/pure/jql_core/src/lib.rs"))
+        self.assertTrue(POLICY.requires_tests("docker-compose.yml"))
+        self.assertTrue(POLICY.requires_tests("pnpm-lock.yaml"))
+        self.assertTrue(POLICY.requires_tests("package-lock.json"))
+        self.assertFalse(POLICY.requires_tests("docs/TESTING.md"))
+
+
+if __name__ == "__main__":
+    unittest.main()

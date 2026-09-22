@@ -11,8 +11,8 @@ Explain the user workflow, motivation, and concrete observable change.
 
 ## Design and alternatives
 
-Describe affected contracts, pure/I/O ownership, security and performance limits,
-alternatives considered, and any uncertain behavior requiring a physical spike.
+Describe affected contracts, security and performance limits, alternatives
+considered, and any behavior that needs investigation.
 
 ## Acceptance and documentation
 

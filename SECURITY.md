@@ -2,7 +2,7 @@
 
 ## Supported scope
 
-Only the current main branch receives scaffold fixes. No supported production
+Only the current main branch receives fixes. No supported production
 release exists yet. Development Compose publishes the explicitly requested host
 ports with default PostgreSQL credentials and disabled OpenSearch authentication.
 Run it only on a trusted, firewalled workstation or disposable CI runner. Do not

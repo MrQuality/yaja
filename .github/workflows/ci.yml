@@ -1,4 +1,4 @@
-name: ADR-001 verification
+name: Tests
 on:
   push:
     branches: [main]
@@ -32,11 +32,11 @@ jobs:
         run: rustup default stable
       - name: Prepare disposable host
         run: python scripts/ci_prepare.py
-      - name: Start infrastructure and check physical readiness
+      - name: Start test services
         run: python scripts/setup_env.py --start --engine docker
-      - name: Test Python policy, cargo, Go, and physical boundaries
+      - name: Run unit and integration tests
         run: python scripts/verify.py
-      - name: Validate commit policy against event base
+      - name: Verify changed code against event base
         run: python scripts/ci_enforce.py
       - name: Container diagnostics
         if: failure()

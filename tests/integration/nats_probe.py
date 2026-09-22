@@ -1,9 +1,5 @@
 #!/usr/bin/env python3
-"""Hypothesis: the local NATS server speaks NATS and exposes JetStream account info.
-
-Observe INFO.jetstream, CONNECT/PING/PONG, then a real $JS.API.INFO response.
-No saved success flag or mocked server can substitute for this execution.
-"""
+"""Check the NATS handshake and JetStream account API against a running server."""
 import json
 import os
 import socket
@@ -70,5 +66,5 @@ if __name__ == "__main__":
     try:
         print(json.dumps(probe()))
     except (OSError, ValueError, KeyError) as error:
-        print(f"ERR_UNVERIFIED_ASSUMPTION: {error}", file=sys.stderr)
+        print(f"NATS_CHECK_FAILED: {error}", file=sys.stderr)
         sys.exit(2)

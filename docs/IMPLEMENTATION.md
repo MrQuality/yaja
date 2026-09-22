@@ -1,44 +1,40 @@
-# Implementation scope and acceptance evidence
+# Implementation status
 
-This initial repository is an executable engineering baseline, not a deployable
-project-management product. Its acceptance matrix is:
+YAJA is in early development. The current components are:
 
-| Component | Implemented contract | Verification |
+| Component | Implemented behavior | Verification |
 | --- | --- | --- |
-| JQL Rust core | Complete `identifier = 'nonempty value'` input; rejects ambiguous/trailing grammar | 3 unit tests |
-| Rust NATS boundary | Bounded TCP connection, INFO, CONNECT, two PING/PONG round trips | Always-on live integration test |
-| Python NATS spike | INFO JetStream flag plus actual `$JS.API.INFO` response | Runs fresh in setup and I/O commit gate |
-| Infrastructure | Four TCP ports; OpenSearch HTTP health | healthcheck.py |
-| Go pure contract | Provisional evaluation requires exact epoch and purity | Table-driven unit test |
-| JS workspace | Shared TypeScript declarations | Declarations only; no runtime test claim |
-| Enforcement | Prohibited tokens, physical spike, staged suites, Markdown update | Policy tests plus Git acceptance checks |
+| Rust query parser | Single `identifier = 'nonempty value'` expression; rejects trailing clauses | Unit tests |
+| Rust NATS connection | Bounded TCP connection, INFO/CONNECT handshake, PING/PONG | Live integration test |
+| Python NATS check | JetStream availability and account API response | Live integration check |
+| Development services | Four TCP ports and OpenSearch HTTP health | Readiness checks |
+| Go synchronization rules | Provisional evaluation requires matching schema version and a pure query | Table-driven unit test |
+| TypeScript contracts | Shared declarations | No runtime implementation |
+| Development tools | Staged-source verification and CI base selection | Temporary Git repository tests |
 
-Rust currently has no external crates. The small synchronous boundary probe
-exposes connection signatures but does not pretend to be an asynchronous
-JetStream publishing implementation. Add an official NATS client and physical
-publish/ack/replay acceptance tests when implementing the event dispatcher.
+## Current limitations
 
-The Go verification helper runs `go test -work` in an owned temporary directory
-and preserves the exact test exit status. Python then removes that directory,
-retrying permission-related file locks for at most 30 seconds. This addresses an
-observed Go 1.27/Windows executable-cleanup race without skipping tests, ignoring
-test failures, or leaving build directories behind. No delay is needed when the
-first cleanup succeeds. Only cleanup is retried; failing tests are never retried.
+The Rust NATS component is a synchronous connection probe. Publishing,
+acknowledgment, and replay are not implemented. Rust currently has no external
+crate dependencies.
 
-Deferred product milestones from the supplied v0.2 specification: full JQL grammar
-and typed OpenSearch/Rhai emission; Wasm bindings; MongoDB/BSON single-document
-mutations; authoritative schema KV; sagas; durable Debezium WAL-to-NATS delivery;
-idempotent projection worker; Go auth/API/SSE multiplexing; React optimistic
-overlay state; reconciliation and crash-isolation acceptance tests.
+The Compose services are for local development. PostgreSQL enables logical WAL,
+but there is no replication slot or CDC connector. FerretDB runs as a standalone
+proxy. TCP readiness does not establish query correctness.
 
-The supplied v0.2 error table describes `CDC_PIPELINE_STALLED` as both HTTP 503
-and a 200 response with a null token. Resolve that API contract before implementing
-the route. This scaffold does not choose silently between contradictory outcomes.
+The Go test helper preserves test exit status and retries temporary-directory
+cleanup for up to 30 seconds to handle Windows executable file locks. Failed
+tests are not retried.
 
-Infrastructure is a local disposable topology. Stock PostgreSQL uses logical WAL
-settings, but no replication slot or CDC connector is created yet. FerretDB is a
-standalone proxy container backed by the PostgreSQL service, not an in-process
-embedded store. TCP health establishes reachability; it does not prove database
-query correctness. OpenSearch HTTP and NATS handshake checks are stronger but
-still intentionally limited. Supply adapter-specific physical tests as those
-boundaries are implemented.
+## Planned work
+
+- Full query grammar, OpenSearch and Rhai emitters, and Wasm bindings.
+- Typed database mutations and authoritative schema state.
+- Sagas, durable CDC delivery, and idempotent search projections.
+- Go authentication, API routes, and SSE delivery.
+- React UI, optimistic state, and reconciliation.
+- Recovery and crash-isolation integration tests.
+
+The [v0.2 design](reference/YAJA-v0.2.md) defines proposed contracts. Its
+`CDC_PIPELINE_STALLED` entry lists both HTTP 503 and a 200 response with a null
+token; this remains an open API decision.

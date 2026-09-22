@@ -1,10 +1,7 @@
 # Contributors
 
-| Contributor | Contribution |
-| --- | --- |
-| YAJA project author | Original v0.2 architecture and ADR-001 requirements |
-| OpenAI Codex, at the project author's direction | Initial repository generator and verification baseline |
+YAJA is maintained by [MrQuality](https://github.com/MrQuality).
 
-This ledger records contributions rather than asserting legal copyright ownership.
-Add your preferred public name or handle in the PR containing your contribution.
-Git history remains the detailed authorship record.
+Git history records contributions. Contributors may add their preferred public
+name or handle here when submitting a change. Third-party notices remain with
+the materials they describe.

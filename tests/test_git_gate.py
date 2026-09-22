@@ -1,9 +1,4 @@
-"""Real temporary Git repositories verify staged enforcement and hook dispatch.
-
-The fixture's pure Python assertion is genuinely executed, including failures.
-No physical service is faked; the missing-spike case fails before network access.
-Synthetic base history is assembled with Git plumbing solely as test input.
-"""
+"""Verify staged test execution and hook dispatch in temporary Git repositories."""
 from pathlib import Path
 import os
 import stat
@@ -29,13 +24,13 @@ class GitGateTests(unittest.TestCase):
                                  "GIT_AUTHOR_EMAIL": "test@example.invalid", "GIT_COMMITTER_EMAIL": "test@example.invalid"})
         self.git("init", "-b", "main")
         self.git("config", "core.autocrlf", "false")
-        for relative in (".githooks/pre_commit.py", ".githooks/pre-commit", ".githooks/ai_enforcer.json"):
+        for relative in (".githooks/pre_commit.py", ".githooks/pre-commit"):
             self.write(relative, (ROOT / relative).read_text(encoding="utf-8"))
         hook = self.root / ".githooks/pre-commit"
         hook.chmod(hook.stat().st_mode | stat.S_IXUSR)
         self.write("src/pure/value.py", "assert 2 + 2 == 4\n")
         self.write("docs/spec.md", "# Fixture contract\n\nArithmetic is pure.\n")
-        self.write("scripts/verify.py", "import subprocess, sys\nsubprocess.run([sys.executable, 'src/pure/value.py'], check=True)\n")
+        self.write("scripts/verify.py", "import subprocess, sys\nassert '--pure' in sys.argv\nsubprocess.run([sys.executable, 'src/pure/value.py'], check=True)\n")
         self.git("add", "--all")
         self.git("update-index", "--chmod=+x", ".githooks/pre-commit")
         tree = self.git("write-tree").stdout.strip()
@@ -60,20 +55,16 @@ class GitGateTests(unittest.TestCase):
         return subprocess.run([sys.executable, ".githooks/pre_commit.py"], cwd=self.root,
                               env=self.environment, capture_output=True, text=True, timeout=60)
 
-    def test_mock_in_staged_io_rejected_despite_unstaged_cleanup(self):
-        self.write("src/io/adapter.rs", "use mockall::automock;\n")
-        self.git("add", "src/io/adapter.rs")
-        self.write("src/io/adapter.rs", "// clean worktree cannot hide staged violation\n")
-        result = self.hook()
-        self.assertEqual(result.returncode, 1, result.stderr)
-        self.assertIn("ERR_MOCK_IN_IO", result.stderr)
-
-    def test_missing_spike_is_exit_two(self):
-        self.write("src/io/adapter.rs", "// physical adapter contract\n")
+    def test_adapter_change_runs_full_suite_and_propagates_failure(self):
+        # Check runner arguments and exit propagation without simulating a service.
+        self.write("scripts/verify.py", "import sys\nassert '--pure' not in sys.argv\nprint('full-suite-selected')\nsys.exit(7)\n")
+        self.git("add", "scripts/verify.py")
+        self.write("src/io/adapter.rs", "// adapter contract\n")
         self.git("add", "src/io/adapter.rs")
         result = self.hook()
-        self.assertEqual(result.returncode, 2, result.stderr)
-        self.assertIn("ERR_UNVERIFIED_ASSUMPTION", result.stderr)
+        self.assertEqual(result.returncode, 3, result.stderr)
+        self.assertIn("full-suite-selected", result.stdout)
+        self.assertIn("VERIFICATION_FAILED", result.stderr)
 
     def test_failing_staged_code_cannot_be_repaired_by_unstaged_code(self):
         self.write("src/pure/value.py", "assert 2 + 2 == 5\n")
@@ -82,20 +73,27 @@ class GitGateTests(unittest.TestCase):
         self.stage_docs()
         result = self.hook()
         self.assertEqual(result.returncode, 3, result.stderr)
-        self.assertIn("ERR_TEST_EXECUTION_FAILED", result.stderr)
+        self.assertIn("VERIFICATION_FAILED", result.stderr)
 
-    def test_unstaged_documentation_is_not_enough(self):
+    def test_valid_code_does_not_require_staged_documentation(self):
         self.write("src/pure/value.py", "assert 3 + 3 == 6\n")
         self.git("add", "src/pure/value.py")
         self.write("docs/spec.md", "# Unstaged update\n")
         result = self.hook()
-        self.assertEqual(result.returncode, 4, result.stderr)
+        self.assertEqual(result.returncode, 0, result.stderr)
 
-    def test_deleted_documentation_is_not_enough(self):
+    def test_documentation_only_change_skips_tests(self):
+        self.stage_docs()
+        result = self.hook()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("Documentation-only change", result.stdout)
+
+    def test_documentation_deletion_does_not_block_valid_code(self):
         self.write("src/pure/value.py", "assert 3 + 3 == 6\n")
         self.git("add", "src/pure/value.py")
         self.git("rm", "docs/spec.md")
-        self.assertEqual(self.hook().returncode, 4)
+        result = self.hook()
+        self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_real_git_commit_runs_the_launcher_and_blocks_failure(self):
         previous = self.git("rev-parse", "HEAD").stdout
@@ -104,11 +102,11 @@ class GitGateTests(unittest.TestCase):
         self.stage_docs()
         result = self.git("commit", "-m", "Must be rejected", check=False)
         self.assertNotEqual(result.returncode, 0)
-        self.assertIn("ERR_TEST_EXECUTION_FAILED", result.stderr)
+        self.assertIn("VERIFICATION_FAILED", result.stderr)
         self.assertEqual(previous, self.git("rev-parse", "HEAD").stdout)
 
     def test_valid_pure_change_and_docs_commit_successfully(self):
-        self.write("src/pure/value.py", "# mockall is allowed in pure code\nassert 3 + 3 == 6\n")
+        self.write("src/pure/value.py", "assert 3 + 3 == 6\n")
         self.git("add", "src/pure/value.py")
         self.stage_docs()
         result = self.git("commit", "-m", "Verified fixture", check=False)
