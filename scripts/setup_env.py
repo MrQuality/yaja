@@ -47,7 +47,7 @@ def main():
     if args.start:
         run(compose_command(args.engine) + ["-f", "docker-compose.yml", "up", "-d"])
     run([sys.executable, "scripts/healthcheck.py", "--wait", "180"])
-    run([sys.executable, "spikes/active_spike.py"])
+    run([sys.executable, "tests/integration/nats_probe.py"])
 
 
 if __name__ == "__main__":

@@ -1,0 +1,62 @@
+# Testing
+
+## Commands
+
+Run the full suite after starting the development services:
+
+```text
+python scripts/setup_env.py --start
+python scripts/verify.py
+```
+
+Run unit tests without external services:
+
+```text
+python scripts/verify.py --pure
+```
+
+The full suite runs Python tests for the development tools, service readiness
+checks, the NATS account API check, Rust workspace tests, and Go tests. Missing
+tools, unavailable services, and test failures produce a nonzero exit status.
+
+Individual commands:
+
+```text
+python -m unittest discover -s tests -v
+python tests/integration/nats_probe.py
+cargo test --locked --workspace
+python scripts/go_test.py
+```
+
+## Coverage
+
+Unit tests cover the equality grammar and schema-version decisions. Integration
+tests use the development NATS server to check its greeting, connection handshake,
+and request/response behavior. The Python probe also checks the JetStream account
+API using a temporary subscription. It creates no streams or application data.
+Connections use three-second deadlines and bounded frame sizes and counts.
+
+Integration results apply to the behavior exercised. A successful handshake does
+not establish durable publication, replay, or recovery. New adapters need tests
+against their actual services for the contracts they introduce. Unit tests and
+test doubles may complement these checks.
+
+## Local hooks and CI
+
+`scripts/setup_env.py` installs the repository's commit hook. To configure only
+the hook, run `python scripts/setup_env.py --hooks-only`.
+
+The hook exports staged files into a temporary directory and tests that snapshot.
+Unstaged edits cannot fix failing staged code. Changes to adapters, dependencies,
+test tools, or CI run the full suite; changes limited to pure code use unit tests.
+Documentation-only changes do not run tests locally. Documentation updates are
+expected when behavior changes, but are not required for every code edit.
+
+The snapshot verifier rejects symlinks and submodules and checks that the index
+has not changed during execution. It cannot judge test completeness or relevance;
+these remain part of review.
+
+CI runs the full suite, then verifies changes relative to the event's base commit.
+Initial pushes are checked in a disposable clone with the staged tree preserved.
+Required CI and review settings on the hosting service provide the shared merge
+gate; local hooks alone cannot enforce it.

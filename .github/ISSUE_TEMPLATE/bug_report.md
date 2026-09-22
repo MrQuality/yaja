@@ -14,6 +14,6 @@ Describe both outcomes and the user impact. Report vulnerabilities privately.
 List minimal steps, exact commands, revision, OS, tool versions, and live container
 versions. Include sanitized logs and whether the failure is consistent.
 
-## Verification boundary
+## Affected component
 
-Identify Track A or Track C, affected invariants, and a candidate acceptance test.
+Identify the component involved and any regression test that would help.

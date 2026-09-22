@@ -197,7 +197,7 @@ sequenceDiagram
 
 ---
 
-## 5. Executable Acceptance Criteria (TDD-Ready)
+## 5. Acceptance Criteria
 
 ```gherkin
 Feature: CDC Pipeline Crash Isolation (OSI-Compliant Document Store)
@@ -250,7 +250,7 @@ Feature: Single-Document Atomicity & Saga Distribution
 
 ---
 
-## 6. Implementation Task DAG (Chronological Milestones)
+## 6. Planned Milestones
 
 * [ ] **M1: OSI-Compliant Storage & Event Infrastructure**
 * [ ] Provision PostgreSQL and FerretDB proxy containers.
