@@ -1,5 +1,5 @@
 /** Provisional artifacts are valid only for their exact schema epoch. */
-export interface CompiledJqlArtifact {
+export interface CompiledQueryArtifact {
   epoch: number;
   is_pure: boolean;
   rhai_script: string;

@@ -1,4 +1,4 @@
-# YAJA — Yet Another Jira Alternative
+# YAJA — Project and task management
 
 ![License: Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue)
 ![Stage: early development](https://img.shields.io/badge/stage-early%20development-orange)
@@ -65,10 +65,10 @@ before changing network exposure or using real data.
 
 ## Parser example
 
-The `jql_core` crate accepts a single equality expression:
+The `yaja_query` crate accepts a single equality expression:
 
 ```rust
-use jql_core::parse_filter;
+use yaja_query::parse_filter;
 
 let filter = parse_filter("status = 'Open'").unwrap();
 assert_eq!(filter.field, "status");
@@ -78,6 +78,10 @@ assert_eq!(filter.value, "Open");
 Identifiers use ASCII letters, digits, and underscores and cannot start with a
 digit. Values are nonempty single-quoted strings. Compound expressions and
 escaped quotes are not supported yet.
+
+This is YAJA's own filter grammar. Jira Query Language (JQL) compatibility is
+not a current feature or requirement. See the [naming and third-party reference
+policy](docs/BRANDING.md) for terminology and compatibility claims.
 
 ## Planned architecture
 
@@ -99,3 +103,6 @@ described in [SECURITY.md](SECURITY.md).
 
 Code is licensed under Apache-2.0. The Code of Conduct retains its upstream
 Contributor Covenant attribution.
+
+YAJA is an independent project and is not affiliated with, sponsored by, or
+endorsed by Atlassian. Jira is a trademark of Atlassian.

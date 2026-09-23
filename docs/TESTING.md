@@ -19,6 +19,11 @@ The full suite runs Python tests for the development tools, service readiness
 checks, the NATS account API check, Rust workspace tests, and Go tests. Missing
 tools, unavailable services, and test failures produce a nonzero exit status.
 
+Both modes also run `python scripts/check_branding.py` to reject retired project
+names and identifiers in current source and documentation. The check permits
+factual third-party references and attribution; it is not a legal clearance
+check. Its regression fixture is excluded from the naming scan.
+
 Individual commands:
 
 ```text

@@ -1,6 +1,6 @@
 //! A typed equality grammar.
 //! Supported input: ASCII identifier = single-quoted nonempty value.
-//! This is not yet the full isomorphic JQL/Rhai/Wasm compiler.
+//! This is not yet the full isomorphic query/Rhai/Wasm compiler.
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct Filter {
