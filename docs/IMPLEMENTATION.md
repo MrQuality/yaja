@@ -28,6 +28,12 @@ tests are not retried.
 
 ## Planned work
 
+The [product plan](product/README.md) adds the agreed product
+requirements, design rationale, open questions, and a proposed delivery backlog.
+Use [that backlog](product/backlog.md) to trace product work to requirements;
+the technical work below remains part of the existing architecture reference.
+Documented requirements and planned backlog items are not implemented features.
+
 - Full query grammar, OpenSearch and Rhai emitters, and Wasm bindings.
 - Typed database mutations and authoritative schema state.
 - Sagas, durable CDC delivery, and idempotent search projections.
