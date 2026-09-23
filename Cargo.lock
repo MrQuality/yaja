@@ -7,5 +7,5 @@ name = "event_dispatcher"
 version = "0.1.0"
 
 [[package]]
-name = "jql_core"
+name = "yaja_query"
 version = "0.1.0"

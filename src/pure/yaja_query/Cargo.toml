@@ -1,5 +1,5 @@
 [package]
-name = "jql_core"
+name = "yaja_query"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

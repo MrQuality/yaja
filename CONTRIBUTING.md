@@ -42,3 +42,11 @@ bypass required review. Ownership is recorded in `.github/CODEOWNERS`.
 Contributions are licensed under Apache-2.0. Retain third-party license notices
 and credit contributors using their preferred public name or handle. Report
 vulnerabilities privately through [SECURITY.md](SECURITY.md).
+
+Use YAJA's [naming and third-party reference policy](docs/BRANDING.md). Submit
+original work or material whose license permits its use here, identify its
+source and license in the contribution, and preserve required notices. This
+applies to code, grammar definitions, examples, documentation, and visual assets.
+Keep third-party product references factual and compatibility claims limited to
+documented, tested behavior. Do not introduce third-party branding into YAJA's
+name, module names, logo, or visual identity.

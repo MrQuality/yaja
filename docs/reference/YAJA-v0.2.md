@@ -1,11 +1,15 @@
 Version: 0.2
-# YAJA (Yet Another Jira Alternative) — Technical Specification
+# YAJA — Project and task management — Technical Specification
+
+Query terminology in this design refers to YAJA's own grammar, not a claim of
+third-party query-language compatibility. The current parser supports only a
+single equality filter; see the [naming policy](../BRANDING.md).
 
 ## 1. System Overview & Invariants
 
 * **Objective**: A high-performance, open-source project management platform built for millions of tasks with totally dynamic custom fields. YAJA provides a real-time, optimistic frontend UX backed by an asynchronous, CQRS-driven, polyglot event-driven architecture.
 * **Target Stack**:
-* **Frontend**: React, React Query (for cache state), WebAssembly (Wasm) for embedded Rhai execution and local JQL compilation.
+* **Frontend**: React, React Query (for cache state), WebAssembly (Wasm) for embedded Rhai execution and local query compilation.
 * **API Edge**: Go (Auth, HTTP Routing, SSE Stream Management, NATS Ingress).
 * **Worker Core**: Rust (Authoritative business logic, Native Rhai execution, Saga Orchestration, Database mutation).
 * **Primary DB (Writes/SoR)**: PostgreSQL accessed via FerretDB proxy (utilizing the official `mongodb` Rust driver).
@@ -17,8 +21,8 @@ Version: 0.2
 * **Critical Invariants**:
 * **Single-Document Atomicity & Sagas**: All database mutations MUST be single-document atomic. Bulk/multi-document workflows MUST execute as asynchronous Event-Driven Sagas via NATS, publishing progress tokens over SSE. Database-level multi-document transactions are strictly forbidden.
 * **CQRS Availability Isolation**: The write-path (React -> Go -> NATS -> Rust -> Postgres) MUST NEVER synchronously query the read-path infrastructure (OpenSearch) to authorize or evaluate a mutation.
-* **Isomorphic Compilation**: Raw JQL MUST NOT be evaluated via regex or raw JavaScript. It must be compiled by a single Isomorphic Rust crate into either OpenSearch Query DSL (server-side) or a capability-tagged Rhai script (client-side Wasm).
-* **Schema Epoch Strictness**: Schema definitions are versioned event streams in NATS KV. Every compiled JQL artifact and optimistic UI mutation MUST be stamped with a Schema Epoch. Local Wasm evaluation is strictly *provisional* and defers to authoritative SSE sync tokens.
+* **Isomorphic Compilation**: Raw query text MUST NOT be evaluated via regex or raw JavaScript. It must be compiled by a single Isomorphic Rust crate into either OpenSearch Query DSL (server-side) or a capability-tagged Rhai script (client-side Wasm).
+* **Schema Epoch Strictness**: Schema definitions are versioned event streams in NATS KV. Every compiled query artifact and optimistic UI mutation MUST be stamped with a Schema Epoch. Local Wasm evaluation is strictly *provisional* and defers to authoritative SSE sync tokens.
 * **Durable CDC Boundary**: The CDC connector (Debezium) MUST checkpoint against the database's native durable transaction log (Postgres WAL), entirely decoupled from the Rust worker's heap/process lifecycle.
 
 
@@ -69,9 +73,9 @@ pub struct SchemaEpoch {
     pub fields: Vec<FieldDefinition>,
 }
 
-/// Emitted by the Isomorphic JQL Compiler
+/// Emitted by the Isomorphic Query Compiler
 #[derive(Debug, Serialize, Deserialize)]
-pub struct CompiledJqlArtifact {
+pub struct CompiledQueryArtifact {
     pub epoch: u64,
     pub is_pure: bool,       // If false, client MUST degrade to Tier 2 (Wait for SSE)
     pub rhai_script: String, // e.g., "doc.status == 'Open' && evaluate_num(doc, 'points') > 5"
@@ -215,10 +219,10 @@ Feature: CDC Pipeline Crash Isolation (OSI-Compliant Document Store)
 ```gherkin
 Feature: Isomorphic Capability-Tagged Tier Degradation
 
-  Scenario: Ad-Hoc JQL relies on index-only features (Lucene Full-Text)
-    Given the user types ad-hoc JQL "description ~ 'server crash'"
+  Scenario: Ad-hoc query relies on index-only features (Lucene Full-Text)
+    Given the user types an ad-hoc query "description ~ 'server crash'"
     When the Wasm compiler processes the string locally
-    Then the resulting CompiledJqlArtifact must set "is_pure" to false
+    Then the resulting CompiledQueryArtifact must set "is_pure" to false
     And the React client must NOT evaluate the Rhai script against optimistic payloads
     And the React client must suppress optimistic board injection
     And the system must rely on SSE Sync Tokens for data rendering
@@ -259,8 +263,8 @@ Feature: Single-Document Atomicity & Saga Distribution
 * [ ] Define the Rust `Action` and `CustomField` structs with `serde` and `bson` derives.
 
 
-* [ ] **M2: The Isomorphic JQL Compiler (Rust & Wasm)**
-* [ ] Build the `yaja-jql` Rust crate using `pest` or `nom`.
+* [ ] **M2: The Isomorphic Query Compiler (Rust & Wasm)**
+* [ ] Extend the `yaja_query` Rust crate using `pest` or `nom`.
 * [ ] Implement the OpenSearch Query DSL emitter (Server-target).
 * [ ] Implement the Rhai script emitter with capability-tagging (`is_pure`) (Wasm/Server-target).
 * [ ] Expose the crate via `wasm-bindgen` and implement browser-based compilation unit tests.
@@ -279,7 +283,7 @@ Feature: Single-Document Atomicity & Saga Distribution
 
 
 * [ ] **M5: React Frontend, Wasm Integration & Optimistic UI**
-* [ ] Integrate the compiled `yaja-jql` Wasm module into the React build pipeline.
+* [ ] Integrate the compiled `yaja-query` Wasm module into the React build pipeline.
 * [ ] Implement React Query cache isolation: create an ephemeral `OverlayCache` distinct from the `QueryCache`.
 * [ ] Implement the Tier 0 (Inject) / Tier 1 (Suppress) injection logic driven by the Wasm `is_pure` flag and Rhai evaluation.
 * [ ] Wire the SSE event listener to flush the `OverlayCache`, trigger OpenSearch refetches, and update Saga progress bars.
