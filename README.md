@@ -20,6 +20,13 @@ There is no runnable web application yet.
 
 See [implementation status](docs/IMPLEMENTATION.md) for limitations and planned work.
 
+## Product planning
+
+The [product plan](docs/product/README.md) records the agreed
+requirements for local task tracking, shared resources, scheduling, and costs.
+It includes decisions, open questions, and a requirement-linked implementation
+backlog. Planned capabilities are not claims of currently available features.
+
 ## Development setup
 
 Install Python 3.10+, Git, Rust stable, Go 1.22+, and Podman or Docker with a
