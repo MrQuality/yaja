@@ -1,3 +1,4 @@
 # Request the repository maintainer's review for every change.
 # GitHub cannot request an approving review from the pull request's author.
+# Ownership does not require code-owner approval during the sole-contributor phase.
 * @MrQuality

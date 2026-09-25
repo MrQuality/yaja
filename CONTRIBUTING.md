@@ -4,6 +4,10 @@ Keep changes focused and explain the problem they solve. Discuss architectural
 changes in an issue before implementing them. Follow the
 [Code of Conduct](CODE_OF_CONDUCT.md).
 
+The [project procedure index](docs/procedures/README.md) lists SOPs, their scope,
+approval status, and enforcement coverage. Follow approved procedures applicable
+to your change. Proposed procedures remain proposals until explicitly approved.
+
 ## Setup and testing
 
 Follow the [development setup](README.md#development-setup), then run:
@@ -33,9 +37,14 @@ The local commit hook tests staged source files in an isolated directory. Stage
 test fixes before retrying a failed commit. CI runs the full suite for pull
 requests and pushes to `main`.
 
-Changes to `main` require passing CI and one approving review. The maintainer
-reviews changes to architecture, dependencies, CI, and test coverage. Do not
-bypass required review. Ownership is recorded in `.github/CODEOWNERS`.
+Changes to `main` require passing CI. During the sole-contributor phase, an
+independent approving PR review is optional. Before merging, the maintainer
+inspects the final change, test evidence, and applicable procedure requirements
+and records that assessment in the PR. Give particular attention to architecture,
+dependencies, CI, and test coverage. Self-assessment is not an independent GitHub
+approval. Ownership is recorded in `.github/CODEOWNERS`; code-owner approval is
+not a required merge condition in this phase. Reconsider mandatory independent
+review when another reviewer is available.
 
 ## License and attribution
 

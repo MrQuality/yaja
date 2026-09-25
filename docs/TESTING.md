@@ -1,5 +1,9 @@
 # Testing
 
+For bounded technical investigations, see the approved [spike procedure and
+register](spikes/README.md). Spike records distinguish planned cases from observed
+results and link experiments to decisions and reusable regression coverage.
+
 ## Commands
 
 Run the full suite after starting the development services:
@@ -63,5 +67,7 @@ these remain part of review.
 
 CI runs the full suite, then verifies changes relative to the event's base commit.
 Initial pushes are checked in a disposable clone with the staged tree preserved.
-Required CI and review settings on the hosting service provide the shared merge
-gate; local hooks alone cannot enforce it.
+Required CI settings on the hosting service provide the shared automated merge
+gate; local hooks alone cannot enforce it. Independent review is optional during
+the sole-contributor phase described in the contribution guide. Consult the
+[procedure index](procedures/README.md) for planned and implemented SOP checks.
