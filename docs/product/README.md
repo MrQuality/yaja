@@ -19,12 +19,16 @@ automatic resource-usage reporting remains an open scope decision.
 
 ## Documents
 
+The [project procedure index](../procedures/README.md) is the entry point for
+SOPs, their approval status, and enforcement coverage.
+
 | Document | Contents |
 | --- | --- |
 | [Requirements](requirements.md) | Product rules, terminology, and acceptance scenarios. |
 | [Decisions](decisions.md) | Design choices and their rationale. |
 | [Open questions](open-questions.md) | Unresolved choices and affected work. |
 | [Backlog](backlog.md) | Proposed delivery order, dependencies, and requirement coverage. |
+| [Spike register and approved procedure](../spikes/README.md) | Bounded investigations, reproducible evidence, and reusable findings. |
 
 **Confirmed** identifies requirements included in this planning baseline.
 **Proposed** identifies design or delivery options still subject to review.

@@ -97,6 +97,9 @@ requires a separate review of dependencies, authentication, and storage choices.
 
 ## Contributing
 
+Use the [project procedure index](docs/procedures/README.md) to find SOPs,
+their approval status, and their enforcement coverage.
+
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution requirements and
 [docs/TESTING.md](docs/TESTING.md) for test commands. Report vulnerabilities as
 described in [SECURITY.md](SECURITY.md).
