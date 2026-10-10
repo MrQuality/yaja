@@ -28,6 +28,7 @@ CREATE TABLE kehila.schema_migrations (
   installed_at timestamptz NOT NULL DEFAULT clock_timestamp()
 );
 \ir operations.sql
+\ir project_create.sql
 \ir access.sql
 INSERT INTO kehila.schema_migrations(version, description)
   VALUES (1, 'Project creation storage foundation');
