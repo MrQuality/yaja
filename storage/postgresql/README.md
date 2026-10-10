@@ -98,6 +98,10 @@ serving-permission cases. A separate backend connection checks role separation.
 It temporarily disables the identity guard inside a transaction: the dedicated
 regression must fail, then pass after rollback restores the guard. SQL failures
 are fatal; expected failures check SQLSTATE and named constraints where applicable.
+Expected verifier-level rejections require psql's script-error exit status 3 and
+the actual verbose ERROR SQLSTATE. Optional message checks use the primary error
+line. Container/runtime/connection failures and matching text in error context
+cannot substitute for a PostgreSQL rejection. The client diagnostic locale is C.
 The caller owns container cleanup even when verification fails. Retest with a
 fresh container; the verifier never resets an existing schema or drops roles.
 

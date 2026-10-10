@@ -102,3 +102,16 @@ stable target allocation (#41), replay clock/retry handling and native end-to-en
 tests before exposing a route. The legacy task path remains separate. Tracking
 updates for #26/#39 and publication of these commits remain deferred under the
 current local-only instruction.
+
+## CR-01 verifier follow-up
+
+Expected verifier rejections now require psql script-error exit status 3 and an
+exact SQLSTATE in the verbose primary error diagnostic. Optional message checks
+cannot match context text; the client diagnostic locale is fixed to C. Nine
+verifier unit tests passed, and in-memory inversions of the exit-status and
+SQLSTATE comparisons were detected. Fresh native PostgreSQL verification passed
+with the stricter parser, including installation rollback, reinstallation,
+permission denial and the identity-guard mutation. A real missing-container error
+whose name contained 42501 was correctly rejected as infrastructure failure.
+The sub-agent follow-up review found no additional actionable issue. Changes
+remain local and do not alter the database schema or application behavior.

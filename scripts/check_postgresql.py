@@ -72,15 +72,25 @@ class DatabaseCheck:
         return subprocess.run(self.podman + list(args), input=input, capture_output=True,
                               text=True, encoding='utf-8', timeout=60)
 
-    def sql(self, statement=None, file=None, expected_error=None, user='postgres'):
-        args = ['exec', '-i', self.container, 'psql', '-X', '-U', user, '-d', 'postgres',
+    def sql(self, statement=None, file=None, expected_state=None, expected_message=None,
+            user='postgres'):
+        require(expected_message is None or expected_state is not None,
+                'expected message requires a SQLSTATE')
+        args = ['exec', '-i', self.container, 'env', 'LC_ALL=C',
+                'psql', '-X', '-U', user, '-d', 'postgres',
                 '-v', 'ON_ERROR_STOP=1', '-v', 'VERBOSITY=verbose']
         if file:
             args += ['-f', file]
         completed = self.command(*args, input=statement)
-        if expected_error:
-            require(completed.returncode != 0 and expected_error in completed.stderr,
-                    'expected database rejection absent: ' + expected_error)
+        if expected_state is not None:
+            # ON_ERROR_STOP uses exit 3 for script SQL errors; execution and
+            # connection failures must never satisfy a negative database test.
+            error = re.search(r'^(?:psql:[^\r\n]+:\d+:\s*)?ERROR:[ \t]+([0-9A-Z]{5}):[ \t]*(.*)$',
+                              completed.stderr, re.MULTILINE)
+            require(completed.returncode == 3 and error is not None
+                    and error.group(1) == expected_state
+                    and (expected_message is None or expected_message in error.group(2)),
+                    'expected database rejection absent: ' + expected_state + '\n' + completed.stderr)
         else:
             require(completed.returncode == 0, completed.stderr)
         return completed.stdout
@@ -99,12 +109,13 @@ class DatabaseCheck:
         installer = (ROOT / 'storage/postgresql/install.sql').read_text(encoding='utf-8')
         # Fail after all DDL, before COMMIT, to prove roles/schema roll back together.
         failed = installer.replace('COMMIT;', 'SELECT 1/0;\nCOMMIT;')
-        self.sql("\\cd " + DESTINATION + "\n" + failed, expected_error='22012')
+        self.sql("\\cd " + DESTINATION + "\n" + failed, expected_state='22012')
         self.sql("DO $$ BEGIN IF EXISTS (SELECT FROM pg_namespace WHERE nspname='kehila') "
                  "OR EXISTS (SELECT FROM pg_roles WHERE rolname IN ('kehila_owner','kehila_creator')) "
                  "THEN RAISE EXCEPTION 'installation rollback left objects'; END IF; END $$;")
         self.sql(file=DESTINATION + '/install.sql')
-        self.sql(file=DESTINATION + '/install.sql', expected_error='fresh dedicated database')
+        self.sql(file=DESTINATION + '/install.sql', expected_state='P0001',
+                 expected_message='fresh dedicated database')
         tests = ROOT / 'tests/integration'
         self.sql((tests / 'postgresql_foundation.sql').read_text(encoding='utf-8') + '\n' +
                  (tests / 'postgresql_creation.sql').read_text(encoding='utf-8'))
@@ -113,12 +124,13 @@ class DatabaseCheck:
                  "SELECT * FROM kehila.lock_operation((SELECT operation_row_id FROM "
                  "kehila.operations WHERE target_project_id='created')); ROLLBACK;",
                  user='foundation_serving')
-        self.sql("SET ROLE kehila_owner;", expected_error='42501', user='foundation_serving')
+        self.sql("SET ROLE kehila_owner;", expected_state='42501', user='foundation_serving')
         regression = (tests / 'postgresql_payload_identity.sql').read_text(encoding='utf-8')
         self.sql('BEGIN;\n' + regression + '\nROLLBACK;')
         self.sql('BEGIN; ALTER TABLE kehila.operation_payloads DISABLE TRIGGER '
                  'operation_payload_identity_immutable;\n' + regression + '\nROLLBACK;',
-                 expected_error='identity regression did not reject reassignment')
+                 expected_state='P0001',
+                 expected_message='identity regression did not reject reassignment')
         # Session termination rolls back the disabled trigger. Prove restoration explicitly.
         self.sql('BEGIN;\n' + regression + '\nROLLBACK;')
         print('PASS: atomic installation/rollback, reinstall rejection, scalar/core/creation '
