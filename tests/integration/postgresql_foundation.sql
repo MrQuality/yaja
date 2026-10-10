@@ -36,11 +36,16 @@ SELECT pg_temp.reject($q$SELECT repeat('x',129)::kehila.ident$q$, '23514');
 SELECT pg_temp.reject($q$SELECT 1.5::kehila.u64$q$, '23514');
 SELECT pg_temp.reject($q$SELECT 18446744073709551616::kehila.u64$q$, '23514');
 SELECT pg_temp.reject($q$SELECT 'a b'::kehila.operation_token$q$, '23514');
+SELECT pg_temp.reject($q$SELECT repeat('a',129)::kehila.operation_token$q$, '23514');
 SELECT pg_temp.require(' id '::kehila.ident = ' id ', 'no trimming');
 SELECT pg_temp.require(U&'\00E9'::kehila.ident <> U&'e\0301'::kehila.ident,
                        'no Unicode normalization');
 SELECT pg_temp.require(18446744073709551615::kehila.u64 = 18446744073709551615,
                        'u64 maximum exact');
+SELECT pg_temp.require(octet_length(repeat(U&'\00E9',64)::kehila.ident) = 128,
+                       'UTF8 identifier bound counts bytes');
+SELECT pg_temp.reject($q$SELECT repeat(U&'\00E9',65)::kehila.ident$q$, '23514');
+SELECT pg_temp.reject($q$SELECT convert_from(decode('00','hex'),'UTF8')$q$, '22021');
 
 INSERT INTO kehila.actors VALUES ('actor', true, true);
 BEGIN;
@@ -82,6 +87,34 @@ SELECT pg_temp.reject($q$DELETE FROM kehila.operations$q$,
                        '23514', 'operation_core_immutable');
 SELECT pg_temp.reject($q$TRUNCATE kehila.operations CASCADE$q$,
                        '23514', 'operation_storage_no_truncate');
+SELECT pg_temp.reject($q$
+  INSERT INTO kehila.operations
+    (actor_id,command_family,target_kind,token,request_codec_version,
+     request_sha256,required_grant,grant_policy_version,replay_origin_ms,replay_deadline_ms)
+  SELECT actor_id,command_family,target_kind,'no-target',request_codec_version,
+    request_sha256,required_grant,grant_policy_version,replay_origin_ms,replay_deadline_ms
+  FROM kehila.operations
+$q$, '23514', 'operations_target_shape');
+SELECT pg_temp.reject($q$
+  INSERT INTO kehila.operations
+    (actor_id,command_family,target_kind,target_project_id,token,
+     request_codec_version,request_sha256,required_grant,grant_policy_version,
+     replay_origin_ms,replay_deadline_ms)
+  SELECT actor_id,command_family,target_kind,'bad-window','bad-window',
+    request_codec_version,request_sha256,required_grant,grant_policy_version,
+    replay_origin_ms,replay_deadline_ms+1 FROM kehila.operations
+$q$, '23514', 'operations_replay_window');
+SELECT pg_temp.reject($q$
+  INSERT INTO kehila.operations
+    (actor_id,command_family,target_kind,target_project_id,token,
+     request_codec_version,request_sha256,required_grant,grant_policy_version,
+     replay_origin_ms,replay_deadline_ms,payload_retired)
+  SELECT actor_id,command_family,target_kind,'born-retired','born-retired',
+    request_codec_version,request_sha256,required_grant,grant_policy_version,
+    replay_origin_ms,replay_deadline_ms,true FROM kehila.operations
+$q$, '23514', 'operation_core_fresh');
+SELECT pg_temp.reject($q$UPDATE kehila.operations SET payload_retired = true;
+  SET CONSTRAINTS ALL IMMEDIATE$q$, '23514', 'operation_payload_shape');
 
 -- Without the identity trigger this move satisfies only the NEW core's shape.
 SELECT pg_temp.reject($q$
@@ -106,6 +139,24 @@ SELECT pg_temp.require((SELECT count(*) = 2 FROM pg_roles
   'restricted capability roles');
 SELECT pg_temp.require(NOT pg_has_role('kehila_creator','kehila_owner','MEMBER'),
                        'creator is not owner');
+
+-- Exercise the supported creation key at its actual maximum byte widths.
+BEGIN;
+INSERT INTO kehila.actors
+  SELECT string_agg(md5(n::text), ''), true, true FROM generate_series(1,4) n;
+INSERT INTO kehila.operations
+  (actor_id,command_family,target_kind,target_project_id,token,
+   request_codec_version,request_sha256,required_grant,grant_policy_version,
+   replay_origin_ms,replay_deadline_ms)
+SELECT (SELECT string_agg(md5(n::text),'') FROM generate_series(1,4) n),
+       'project_create','project',
+       (SELECT string_agg(md5(n::text),'') FROM generate_series(5,8) n),
+       (SELECT string_agg(md5(n::text),'') FROM generate_series(9,12) n),
+       1,decode(repeat('00',32),'hex'),'project_create',1,0,7776000000
+RETURNING operation_row_id \gset
+INSERT INTO kehila.operation_payloads VALUES (:operation_row_id,'\x00',1,'{}');
+SET CONSTRAINTS ALL IMMEDIATE;
+ROLLBACK;
 
 BEGIN;
 UPDATE kehila.operations SET payload_retired = true;

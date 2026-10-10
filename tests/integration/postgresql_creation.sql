@@ -62,6 +62,15 @@ SELECT pg_temp.reject($q$DELETE FROM kehila.workflow_statuses WHERE status_id = 
 SELECT pg_temp.reject($q$DELETE FROM kehila.type_workflows;
   SET CONSTRAINTS ALL IMMEDIATE$q$, '23503', 'type_default_membership');
 SELECT pg_temp.reject($q$UPDATE kehila.fields SET owner_type_id = 'missing'$q$, '23503');
+SELECT pg_temp.reject($q$
+  INSERT INTO kehila.work_item_types VALUES ('created','other','flow',NULL,false,1);
+  INSERT INTO kehila.type_workflows VALUES ('created','other','flow',0);
+  UPDATE kehila.fields SET owner_type_id = 'other';
+  SET CONSTRAINTS ALL IMMEDIATE
+$q$, '23503', 'type_title_field');
+SELECT pg_temp.reject($q$UPDATE kehila.projects SET creation_operation_row_id =
+  (SELECT operation_row_id FROM kehila.operations WHERE target_project_id = 'project')
+$q$, '23503');
 SELECT pg_temp.reject($q$UPDATE kehila.fields SET value_kind = 'number'$q$,
                        '23514', 'slice1_field_kind');
 SELECT pg_temp.require((SELECT count(*) = 1 FROM kehila.projects),

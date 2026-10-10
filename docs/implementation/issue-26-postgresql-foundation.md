@@ -1,6 +1,6 @@
 # Native PostgreSQL foundation: local implementation plan
 
-Status: In progress, 2026-10-10. Related: #26/B-005, #39, #40, #41.
+Status: Foundation complete locally, unpushed, 2026-10-10. Related: #26/B-005, #39, #40, #41.
 Base: main at 12871228bae3a1b6a45b08f188741a18631ac5d7.
 Work is local only; no push, issue edit or PR update is authorized for this slice.
 GitHub #26 is closed despite outstanding production deliverables; preserve that
@@ -13,11 +13,11 @@ remote state until the maintainer authorizes tracking updates. #39 remains open.
    privileges. Install the corrected payload identity guard. Record selected
    representation choices without claiming an authenticated creation route.
 2. **Definition of Done:**
-   - [ ] Record native version-one codec/identifier choices and remaining alignment obligations.
-   - [ ] Provide executable installation SQL for operations, creation/configuration/history and restricted service roles.
-   - [ ] Installation is transactional and rejects unsupported servers, encoding, existing schemas or colliding roles rather than silently adopting them.
-   - [ ] Real database checks cover install/reinstall/failure rollback, scalar/target constraints, payload identity/shape, irreversible retirement, history protection and serving-role privileges.
-   - [ ] Required staged checks and an evidence-based review pass; documentation distinguishes completed foundation from outstanding adapters/routes and native Linux verification.
+   - [x] Record native version-one codec/identifier choices and remaining alignment obligations.
+   - [x] Provide executable installation SQL for operations, creation/configuration/history and restricted service roles.
+   - [x] Installation is transactional and rejects unsupported servers, encoding, existing schemas or colliding roles rather than silently adopting them.
+   - [x] Real database checks cover install/reinstall/failure rollback, scalar/target constraints, payload identity/shape, irreversible retirement, history protection and serving-role privileges.
+   - [x] Required staged checks and an evidence-based review pass; documentation distinguishes completed foundation from outstanding adapters/routes and native Linux verification.
 3. **Dependencies & Prerequisites:** PostgreSQL 16 UTF8, a fresh dedicated database
    and deployment administrator, Python 3.10+, existing toolchain and Podman only
    for local services. No new Python driver or external package is required.
@@ -45,6 +45,8 @@ remote state until the maintainer authorizes tracking updates. #39 remains open.
 
 ## Selected representation and enforcement boundary
 
+The physical foundation is recorded in [ADR-103](../architecture/ADR-103-native-creation-foundation.md),
+proposed for production adoption pending review of this local implementation.
 The maintainer authorized this local progression on 2026-10-10 after SP-003 review.
 Use version-one domain-separated binary request bytes with SHA-256; use separate
 versioned JSONB saved-result/configuration envelopes and canonical decimal strings
@@ -67,3 +69,36 @@ separation. It does not prove a trusted seed, permission mapping or exact replay
 reconstruction by an application. Those require the production codec/adapter and
 #40/#41 integrations. Creation-only guards remain explicit until later migrations
 supply replacement invariants. No serving compaction/revocation path is granted.
+
+## Local result and next slice
+
+The [executable baseline and reproduction guide](../../storage/postgresql/README.md)
+install schema version one atomically with separate NOLOGIN ownership and
+creation-capability roles. Native verification passed on PostgreSQL 16.15 in a
+bounded networkless Linux container on Windows. An injected late installation
+failure left no schema or capability roles. Reinstallation was rejected. Tests
+checked scalar/UTF8 limits, maximum supported creation-key widths, replay-window
+shape, operation attribution, deferred membership, immutable history, restricted
+serving DML and ownership separation. Disabling the payload identity guard caused
+the regression to fail; rollback restored the guard and the regression passed.
+Required staged full-suite checks passed for the implementation commits.
+
+One verification attempt failed in the existing Go/Rust task-path test when a
+process exited before API readiness. Its standalone diagnostic rerun passed;
+the cause was not established. No hook or integration assertion was bypassed.
+Treat this as an existing-suite diagnostic/reliability concern for follow-up,
+separate from the passing native database cases.
+
+Self-review covered correctness, readability, architecture, security and bounded
+resource behavior. No new runtime dependency or public route was added. Evidence
+is local; no independent approval, hosted CI or native Linux-host execution is
+claimed. Fixed cluster-wide role names deliberately restrict this fresh installer
+to an unused role namespace; upgrading populated databases remains separate work.
+
+Next implement the production typed storage codec and internal project-creation
+adapter, including domain/interface storage-bound alignment and reconstruction
+from the single trusted result. Then integrate trusted actor/authority (#40),
+stable target allocation (#41), replay clock/retry handling and native end-to-end
+tests before exposing a route. The legacy task path remains separate. Tracking
+updates for #26/#39 and publication of these commits remain deferred under the
+current local-only instruction.
