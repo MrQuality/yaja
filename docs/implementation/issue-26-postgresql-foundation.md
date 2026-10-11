@@ -1,10 +1,10 @@
 # Native PostgreSQL foundation: local implementation plan
 
-Status: Foundation complete locally, unpushed, 2026-10-10. Related: #26/B-005, #39, #40, #41.
+Status: Foundation prepared for PR review, 2026-10-11. Related: #26/B-005, #39, #40, #41.
 Base: main at 12871228bae3a1b6a45b08f188741a18631ac5d7.
-Work is local only; no push, issue edit or PR update is authorized for this slice.
-GitHub #26 is closed despite outstanding production deliverables; preserve that
-remote state until the maintainer authorizes tracking updates. #39 remains open.
+The foundation is a bounded storage slice, not completion of M1-01. GitHub #26
+is closed despite outstanding production deliverables; its closure is not
+implementation evidence. #39 remains open. Remaining work is listed below.
 
 ## Pre-Execution Plan
 
@@ -99,9 +99,9 @@ Next implement the production typed storage codec and internal project-creation
 adapter, including domain/interface storage-bound alignment and reconstruction
 from the single trusted result. Then integrate trusted actor/authority (#40),
 stable target allocation (#41), replay clock/retry handling and native end-to-end
-tests before exposing a route. The legacy task path remains separate. Tracking
-updates for #26/#39 and publication of these commits remain deferred under the
-current local-only instruction.
+tests before exposing a route. The legacy task path remains separate. This PR
+publishes only the foundation; it does not complete #26/#39 or change their
+tracking status.
 
 ## CR-01 verifier follow-up
 
@@ -113,5 +113,23 @@ SQLSTATE comparisons were detected. Fresh native PostgreSQL verification passed
 with the stricter parser, including installation rollback, reinstallation,
 permission denial and the identity-guard mutation. A real missing-container error
 whose name contained 42501 was correctly rejected as infrastructure failure.
-The sub-agent follow-up review found no additional actionable issue. Changes
-remain local and do not alter the database schema or application behavior.
+The follow-up review found no additional actionable issue. Changes do not alter
+the database schema or application behavior.
+
+## Publication verification (2026-10-11)
+
+Fresh PostgreSQL 16.15 verification passed on the existing rootful Podman
+connection with the documented network isolation and resource ceilings. It
+repeated installation failure/rollback, reinstall rejection, scalar/core/creation
+integrity, separate serving-role checks and payload-identity mutation detection.
+All nine verifier unit tests passed. The first rootless container startup failed
+before PostgreSQL ran because the runtime could not apply its memory cgroup
+limit; no verifier safety gate or resource limit was relaxed.
+
+Full `python scripts/verify.py` verification passed on the publication branch:
+Python tooling regressions, naming/engineering checks, Go formatting/vet,
+service readiness/NATS checks, workspace Rust and Go tests, SP-002/SP-003 pure
+oracles, and the live two-worker task-path contention/deadline/recovery cases.
+Two POSIX-only Python fixtures were skipped on Windows. This shared result is
+separate from the native PostgreSQL suite above; neither establishes a supported
+native application route or production qualification.
