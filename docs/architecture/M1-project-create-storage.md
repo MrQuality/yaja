@@ -1,14 +1,16 @@
 # M1 project creation: storage specification
 
-Status: Proposed, 2026-10-08. Scope: #26/B-005 with #27 and #11/#32.
-This is illustrative PostgreSQL 16 SQL for review, not an installed migration.
+Status: Storage foundation implemented locally, 2026-10-10. Scope: #26/B-005 with #27 and #11/#32.
+The executable fresh baseline is in [storage/postgresql](../../storage/postgresql/README.md).
+The SQL below explains the design; installation uses the executable files.
 The unchanged SQL at baseline 9f433f9 was executed in
 [SP-002](../spikes/SP-002-postgresql-project-create.md). The bounded tests found
-a privileged payload-identity move gap; the SQL remains proposed and uncorrected.
+a privileged payload-identity move gap; the executable baseline includes the
+identity guard shown below. The frozen experiment remains unchanged.
 [ADR-102](ADR-102-postgresql-transactions.md)
 accepts the storage direction; it does not approve the physical choices below.
 The typed-target layout below replaces the project-only key sketch. Its physical
-columns are a proposed realization of the agreed target-scope correction.
+columns implement the agreed target-scope correction for the creation foundation.
 
 ## Outcome and boundary
 
@@ -17,7 +19,7 @@ revision-one history, initial access, and successful request result in one
 transaction. The existing experimental worker remains unchanged.
 
 The [seed/history tables](M1-project-create-seed.md) continue this SQL. Read both
-documents as one proposed schema; neither fragment is a complete migration.
+documents as one schema explanation; neither Markdown fragment is an installer.
 The [command and verification proposal](M1-project-create-protocol.md) defines
 the locking, retry, privilege, and evidence requirements for this slice.
 
@@ -26,7 +28,11 @@ Deleting payload must never remove the request's unique identity. Product histor
 references that permanent core, not the replay payload. Full replay retains exact
 typed request comparison; a digest is not a substitute for it.
 
-## Choices requiring review
+## Choices and remaining application gates
+
+The [local implementation plan](../implementation/issue-26-postgresql-foundation.md)
+records the selected native representation boundary. Foundation installation
+does not complete the application acceptance obligations in the table below.
 
 | ID | Proposal | Acceptance boundary |
 | --- | --- | --- |
@@ -44,8 +50,9 @@ The [B-003 contract](../product/B-003-contract.md) remains the behavioral author
 
 ## Scalars and permanent operations
 
-Deployment prerequisites are PostgreSQL 16 and database encoding UTF8. Roles and
-schema ownership must be provisioned separately. The integer domain deliberately
+Deployment prerequisites are PostgreSQL 16 and database encoding UTF8. The
+executable installer provisions separate owner and serving-capability roles.
+The integer domain deliberately
 uses unconstrained numeric plus an integral-value check: numeric(20,0) can round
 fractional input before a CHECK sees it. The adapter must still decode to u64
 exactly and reject overflow. Internal generated row IDs may have gaps; they are
@@ -154,7 +161,8 @@ is accepted; keep transactions bounded. Prefer the database clock for sampling
 and expiry/compaction decisions; verify its mapping and rollback behavior in the
 adapter. The permanent original grant is creation permission on actor_id
 for this family, checked on every retry. Other grant scopes are not encoded here.
-Request and result codecs must be specified and versioned before implementation.
+Production request/result codecs and stored-version dispatch must be implemented
+before a native command is exposed.
 
 Target fields mirror OperationTarget in the pure contract: a Relationship's
 project component is its owner_project_id. NULLS NOT DISTINCT prevents absent
@@ -296,8 +304,8 @@ not an owner able to disable them. The serving role has no TRUNCATE privilege.
 The identity guard rejects payload reassignment before UPDATE; same-identity
 updates still undergo the deferred shape check. Serving payload UPDATE remains
 forbidden. SP-002 retains its frozen pre-correction schema to reproduce the old
-gap and tests this guard separately; the corrected proposal is not an installed
-application migration.
+gap and tests this guard separately. The native baseline installs the guard;
+it does not yet supply a serving application adapter.
 
 Retirement changes a partial-index column and prevents HOT updates. Measure
 compaction batch size, lock waits, WAL and vacuum behavior. The attribution index
@@ -306,8 +314,10 @@ key. No performance bottleneck is established.
 
 ## Review and implementation gates
 
-Approve the proposed scalar/access/codec choices before installing this SQL.
-Review SQL together with the seed, attribution, role, and command specifications.
+The native foundation follows the selected storage choices in the implementation
+plan. Complete domain/interface alignment and production codecs before exposing
+a native route. Review upgrades with the seed, attribution, role and command
+specifications.
 Test direct constraint violations, multi-process retries, premature compaction,
 missing payload, clock rollback, restore, and core mutation attempts. Preserve the
 explicit trusted function search_path in executable migrations; serving roles
